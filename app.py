@@ -7,61 +7,77 @@ from flask import (
     request,
 )
 from flask_pymongo import PyMongo
+from pymongo.errors import DuplicateKeyError
+from bson.objectid import ObjectId
+# import sys
 
 items = [
     {
-        'id': 1,
         'title': 'Milk',
         'description': '',
         'done': False
     },
     {
-        'id': 2,
         'title': 'Cheese',
         'description': 'for pizza',
         'done': False
     },
     {
-        "id": 3,
         "title": "Pizza",
         "description": "pepperoni",
         "done": False,
     },
     {
-        "id": 4,
         "title": "Fruit",
         "description": "apple",
         "done": False,
     },
     {
-        "id": 5,
         "title": "Meat",
         "description": "beef",
         "done": False,
     }
 ]
 
+
 app = Flask(__name__)
-mongo = PyMongo(app)
 
 
-@app.route('/shopping/admin', methods=['GET'])
+@app.route('/shopping/setup', methods=['GET'])
 def home_page():
-    shopping_list = mongo.db.shopping.find({'online': True})
-    return jsonify({'items': shopping_list})
+    ids = []
+    try:
+        for item in items:
+            ids.append(str(shopping_list.insert(item)))
+    except DuplicateKeyError as e:
+        abort(400)
+    finally:
+        return jsonify({'result': ids})
 
 
 @app.route('/shopping/list', methods=['GET'])
 def get_list():
-    return jsonify({'items': items})
+    result = []
+    for item in shopping_list.find():
+        result.append({
+            '_id': str(item['_id']),
+            'title': item['title'],
+            'description': item['description'],
+            'done': item['done']
+        })
+    return jsonify({'item': result})
 
 
-@app.route('/shopping/list/<int:item_id>', methods=['GET'])
+@app.route('/shopping/list/<string:item_id>', methods=['GET'])
 def get_item(item_id):
-    item = list(filter(lambda t: t['id'] == item_id, items))
-    if len(item) == 0:
-        abort(404)
-    return jsonify({'items': item[0]})
+    item = dict(shopping_list.find_one_or_404({'_id': ObjectId(item_id)}))
+    # print(item, file=sys.stderr)
+    output = {
+            'title': item['title'],
+            'description': item['description'],
+            'done': item['done']
+        }
+    return jsonify({'item': output})
 
 
 @app.route('/shopping/list', methods=['POST'])
@@ -69,20 +85,17 @@ def create_item():
     if not request.json or 'title' not in request.json:
         abort(400)
     item = {
-        'id': items[-1]['id'] + 1,
         'title': request.json['title'],
         'description': request.json.get('description', ""),
         'done': False
     }
-    items.append(item)
-    return jsonify({'items': item}), 201
+    _id = str(shopping_list.insert(item))
+    return jsonify({'items': _id}), 201
 
 
-@app.route('/shopping/list/<int:item_id>', methods=['PUT'])
+@app.route('/shopping/list/<string:item_id>', methods=['PUT'])
 def update_item(item_id):
-    item = list(filter(lambda t: t['id'] == item_id, items))
-    if len(item) == 0:
-        abort(404)
+    item = dict(shopping_list.find_one_or_404({'_id': ObjectId(item_id)}))
     if not request.json:
         abort(400)
     if 'title' not in request.json:
@@ -91,19 +104,30 @@ def update_item(item_id):
         abort(400)
     if 'done' not in request.json:
         abort(400)
-    item[0]['title'] = request.json.get('title', item[0]['title'])
-    item[0]['description'] = request.json.get('description', item[0]['description'])
-    item[0]['done'] = request.json.get('done', item[0]['done'])
-    return jsonify({'items': item[0]})
+
+    shopping_list.replace_one(
+        {'_id': ObjectId(item_id)},
+        {
+            'title': request.json.get('title', item['title']),
+            'description': request.json.get('description', item['description']),
+            'done': request.json.get('done', item['done'])
+        }
+    )
+    return jsonify({'items': 'OK'})
 
 
-@app.route('/shopping/list/<int:item_id>', methods=['DELETE'])
+@app.route('/shopping/list/<string:item_id>', methods=['DELETE'])
 def delete_item(item_id):
-    item = list(filter(lambda t: t['id'] == item_id, items))
-    if len(item) == 0:
-        abort(404)
-        items.remove(item[0])
+    shopping_list = mongo.db.shopping_list
+    shopping_list.find_one_or_404({'_id': ObjectId(item_id)})
+    shopping_list.delete_one({'_id': ObjectId(item_id)})
     return jsonify({'result': True})
+
+
+@app.route('/shopping/list/drop', methods=['DELETE'])
+def drop_collection():
+    shopping_list.drop()
+    return jsonify({'result': 'OK'})
 
 
 @app.errorhandler(404)
@@ -117,4 +141,16 @@ def bad_request(error):
 
 
 if __name__ == '__main__':
+    with app.app_context():
+        # Config mongodb
+        app.config['MONGO_DBNAME'] = 'shopping_list'
+        app.config['MONGO_URI'] = 'mongodb://127.0.0.1:27017/shopping_list'
+
+        mongo = PyMongo(app)
+        shopping_list = mongo.db.shopping_list
+        try:
+            shopping_list.create_index('name', unique=True)
+        except DuplicateKeyError as e:
+            pass
+
     app.run(debug=True)

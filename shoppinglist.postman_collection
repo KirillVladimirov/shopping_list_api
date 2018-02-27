@@ -1,0 +1,106 @@
+{
+	"variables": [],
+	"info": {
+		"name": "shoppinglist",
+		"_postman_id": "09547288-009b-29d1-c6a4-b86ba50483b6",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "setup db",
+			"request": {
+				"url": "http://127.0.0.1:5000/shopping/setup",
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "index",
+			"request": {
+				"url": "http://127.0.0.1:5000/shopping/list",
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "view",
+			"request": {
+				"url": "http://127.0.0.1:5000/shopping/list/5a95c887b49cd41f3dd0a7d1",
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "insert",
+			"request": {
+				"url": "http://127.0.0.1:5000/shopping/list",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"marshmallow\"}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "delete",
+			"request": {
+				"url": "http://127.0.0.1:5000/shopping/list/5a95c887b49cd41f3dd0a7d3",
+				"method": "DELETE",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "drop db",
+			"request": {
+				"url": "http://127.0.0.1:5000/shopping/list/drop",
+				"method": "DELETE",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "updste",
+			"request": {
+				"url": "http://127.0.0.1:5000/shopping/list/5a95c887b49cd41f3dd0a7d1",
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"title\": \"marshmallow\",\n\t\"description\": \"new\",\n\t\"done\": true\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
